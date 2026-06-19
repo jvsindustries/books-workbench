@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stevenson Books — Cleanup Workbench</title>
+<style>
+:root {
+  --navy: #1f4e79;
+  --navy2: #2e5496;
+  --ink: #1c2330;
+  --muted: #667085;
+  --line: #e3e8ef;
+  --bg: #f6f8fb;
+  --red: #c0143c;
+  --green: #1f8f4e;
+  --amber: #b8860b;
+  --orange: #c55a11;
+  --gray: #8a94a6;
+}
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.app { display: flex; flex-direction: column; min-height: 100%; }
+.loading { padding: 40px; color: var(--muted); }
+
+/* Top bar */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; padding: 12px 20px; background: var(--navy); color: #fff; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.logo {
+  width: 40px; height: 40px; border-radius: 9px; background: #fff; color: var(--navy);
+  font-weight: 800; display: grid; place-items: center; letter-spacing: .5px;
+}
+.title { font-weight: 700; font-size: 16px; }
+.subtitle { font-size: 12px; opacity: .8; }
+.top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mode { font-size: 12px; padding: 5px 10px; border-radius: 999px; }
+.mode-local { background: rgba(255,255,255,.16); }
+.mode-cloud { background: #14532d; }
+
+/* Buttons */
+.btn {
+  background: #fff; color: var(--navy); border: 1px solid transparent; border-radius: 8px;
+  padding: 7px 12px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.btn:hover { background: #eef3fb; }
+.btn.ghost { background: transparent; color: #fff; border-color: rgba(255,255,255,.4); }
+.btn.ghost:hover { background: rgba(255,255,255,.12); }
+.btn.file { display: inline-flex; align-items: center; }
+.btn.add { margin-top: 8px; color: var(--navy); border: 1px dashed var(--line); background: #fff; }
+
+/* Tabs */
+.tabs { display: flex; gap: 2px; padding: 0 14px; background: #fff; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tab {
+  border: none; background: transparent; padding: 12px 14px; font-size: 13.5px; font-weight: 600;
+  color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap;
+}
+.tab:hover { color: var(--ink); }
+.tab.active { color: var(--navy); border-bottom-color: var(--navy); }
+
+/* Content */
+.content { padding: 18px 20px 40px; flex: 1; }
+.sub { font-size: 15px; margin: 4px 0 8px; color: var(--ink); }
+.muted { color: var(--muted); font-size: 13px; max-width: 900px; }
+.tbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+
+/* Tables */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+table.grid { border-collapse: collapse; width: 100%; }
+table.grid th {
+  text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px;
+  color: #fff; background: var(--navy); padding: 8px 8px; position: sticky; top: 0;
+}
+table.grid td { border-bottom: 1px solid var(--line); padding: 3px 6px; vertical-align: middle; }
+table.grid tr:hover td { background: #fafcff; }
+.empty { color: var(--muted); padding: 16px; text-align: center; }
+
+.cell-input, .cell-select {
+  width: 100%; border: 1px solid transparent; background: transparent; border-radius: 6px;
+  padding: 5px 6px; font: inherit; color: var(--ink);
+}
+.cell-input:hover, .cell-select:hover { border-color: var(--line); }
+.cell-input:focus, .cell-select:focus { outline: none; border-color: var(--navy2); background: #fff; }
+.cell-input.num { text-align: right; font-variant-numeric: tabular-nums; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.gap-bad { color: var(--red); font-weight: 700; }
+
+.row-del {
+  border: none; background: transparent; color: var(--gray); font-size: 18px; line-height: 1;
+  cursor: pointer; padding: 2px 6px; border-radius: 6px;
+}
+.row-del:hover { background: #fdecef; color: var(--red); }
+
+/* Pills */
+.pill { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+.cell-select.pill { padding-right: 18px; }
+.pill-red { background: #fde7ec; color: var(--red); }
+.pill-orange { background: #fcebdd; color: var(--orange); }
+.pill-amber { background: #fbf2d8; color: var(--amber); }
+.pill-green { background: #e3f5ea; color: var(--green); }
+.pill-gray { background: #eef1f5; color: var(--gray); }
+
+/* Dashboard */
+.dash { display: flex; flex-direction: column; gap: 18px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.card-k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+.card-v { font-size: 26px; font-weight: 800; color: var(--navy); margin: 4px 0; font-variant-numeric: tabular-nums; }
+.card-sub { font-size: 12px; color: var(--muted); }
+.bar { height: 7px; background: #eef1f5; border-radius: 999px; overflow: hidden; margin: 6px 0; }
+.bar-fill { height: 100%; background: var(--green); }
+.sev-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.sev-box { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+.sev-box b { font-size: 16px; }
+.note { background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--navy); border-radius: 10px; padding: 12px 16px; font-size: 13px; color: #344054; max-width: 960px; }
+.summary { margin-top: 22px; }
+table.mini { width: auto; min-width: 420px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+
+.foot { padding: 14px 20px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); background: #fff; }
+
+
+.login { min-height: 100vh; display: grid; place-items: center; background: var(--navy); padding: 20px; }
+.login-card { background: #fff; border-radius: 16px; padding: 32px 28px; width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,.3); text-align: center; }
+.login-card .logo { width: 52px; height: 52px; border-radius: 12px; background: var(--navy); color: #fff; display: grid; place-items: center; font-weight: 800; margin: 0 auto 14px; font-size: 20px; }
+.login-card h1 { margin: 0 0 2px; font-size: 22px; color: var(--ink); }
+.login-card label { display: block; text-align: left; font-size: 12px; color: var(--muted); margin: 14px 0 4px; font-weight: 600; }
+.login-input { width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 9px; font-size: 15px; }
+.login-input:focus { outline: none; border-color: var(--navy2); }
+.login-btn { width: 100%; margin-top: 18px; padding: 11px; background: var(--navy); color: #fff; font-size: 15px; }
+.login-btn:hover { background: var(--navy2); }
+.linkbtn { background: none; border: none; color: var(--navy2); cursor: pointer; font-size: 13px; margin-top: 10px; text-decoration: underline; }
+.login-msg { margin-top: 14px; font-size: 13px; color: var(--navy2); background: #eef3fb; padding: 8px 10px; border-radius: 8px; }
+.login-foot { margin-top: 18px; font-size: 11px; color: var(--muted); }
+
+</style>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+// Tiny CSV + download helpers (no dependencies).
+function toCSV(rows, columns) {
+  const esc = (v) => {
+    if (v == null) v = ''
+    v = String(v)
+    return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v
+  }
+  const header = columns.map((c) => esc(c.label || c.key)).join(',')
+  const body = rows.map((r) => columns.map((c) => esc(r[c.key])).join(',')).join('\n')
+  return header + '\n' + body
+}
+
+function download(filename, text, type = 'text/csv;charset=utf-8') {
+  const blob = new Blob([text], { type })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
+function money(n) {
+  if (n == null || n === '') return ''
+  const x = Number(n)
+  if (Number.isNaN(x)) return String(n)
+  return x.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+}
+
+
+
+const SB_URL = 'https://cxbffqojhdeajslaimjt.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4YmZmcW9qaGRlYWpzbGFpbWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzMTQ3MDcsImV4cCI6MjA4Njg5MDcwN30.cr37Pn1UCD8ElyxPYYVhTjGumaQR7af46szfJjF2QPQ';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+const MODE = 'supabase';
+const TABLES = ['coa','banks','entities','loanaccts','loanledger','arap','findings','adjustments'];
+const uid = () => 'r' + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+const T = (t) => 'sbw_' + t;
+const list = async (t) => { const { data, error } = await sb.from(T(t)).select('*'); if (error) throw error; return data || []; };
+const upsert = async (t, row) => { const { data, error } = await sb.from(T(t)).upsert(row).select().single(); if (error) throw error; return data; };
+const remove = async (t, id) => { const { error } = await sb.from(T(t)).delete().eq('id', id); if (error) throw error; };
+const resetLocal = () => {};
+const exportAll = async () => { const o = { _exportedAt: new Date().toISOString() }; for (const t of TABLES) o[t] = await list(t); return o; };
+const importAll = async (obj) => { for (const t of TABLES) { if (Array.isArray(obj[t])) for (const r of obj[t]) await upsert(t, r); } };
+
+
+
+const STATUS = ['To do', 'In progress', 'Done', 'OK', 'Retire', 'N/A']
+const SEV = ['Critical', 'High', 'Medium', 'Low']
+
+// Column definitions per module
+const COLS = {
+  coa: [
+    { key: 'name', label: 'Account', type: 'text', w: 260 },
+    { key: 'type', label: 'Type', type: 'text', w: 130 },
+    { key: 'qb_balance', label: 'QB balance', type: 'money', w: 110 },
+    { key: 'correct_balance', label: 'Correct', type: 'money', w: 110 },
+    { key: 'action', label: 'Action', type: 'text', w: 220 },
+    { key: 'status', label: 'Status', type: 'select', options: STATUS, w: 120 },
+    { key: 'notes', label: 'Notes', type: 'text', w: 220 },
+  ],
+  banks: [
+    { key: 'account', label: 'Account', type: 'text', w: 230 },
+    { key: 'qb_balance', label: 'QB balance', type: 'money', w: 120 },
+    { key: 'bank_balance', label: 'Actual bank', type: 'money', w: 120 },
+    { key: 'gap', label: 'Gap (QB−bank)', type: 'derived', w: 130 },
+    { key: 'status', label: 'Status', type: 'select', options: STATUS, w: 120 },
+    { key: 'notes', label: 'Notes', type: 'text', w: 260 },
+  ],
+  loanaccts: [
+    { key: 'account', label: 'QB account', type: 'text', w: 250 },
+    { key: 'counterparty', label: 'Counterparty', type: 'text', w: 180 },
+    { key: 'qb_balance', label: 'QB balance', type: 'money', w: 120 },
+    { key: 'correct_balance', label: 'Correct', type: 'money', w: 120 },
+    { key: 'status', label: 'Status', type: 'select', options: STATUS, w: 120 },
+    { key: 'notes', label: 'Notes', type: 'text', w: 240 },
+  ],
+  loanledger: [
+    { key: 'date', label: 'Date', type: 'text', w: 110 },
+    { key: 'counterparty', label: 'Counterparty', type: 'text', w: 190 },
+    { key: 'direction', label: 'Direction', type: 'select', options: ['In (loan to Stevenson)', 'Out (repaid / loaned out)'], w: 190 },
+    { key: 'kind', label: 'Kind', type: 'select', options: ['Principal', 'Interest', 'Repayment', 'Other'], w: 130 },
+    { key: 'amount', label: 'Amount', type: 'money', w: 120 },
+    { key: 'memo', label: 'Memo', type: 'text', w: 220 },
+  ],
+  arap: [
+    { key: 'kind', label: 'AR/AP', type: 'select', options: ['AR', 'AP'], w: 80 },
+    { key: 'name', label: 'Customer / Vendor', type: 'text', w: 240 },
+    { key: 'amount', label: 'Amount', type: 'money', w: 120 },
+    { key: 'issue', label: 'Issue', type: 'text', w: 220 },
+    { key: 'action', label: 'Action', type: 'text', w: 240 },
+    { key: 'status', label: 'Status', type: 'select', options: STATUS, w: 120 },
+    { key: 'notes', label: 'Notes', type: 'text', w: 160 },
+  ],
+  findings: [
+    { key: 'area', label: 'Area', type: 'text', w: 130 },
+    { key: 'issue', label: 'Issue', type: 'text', w: 300 },
+    { key: 'severity', label: 'Severity', type: 'select', options: SEV, w: 110 },
+    { key: 'amount', label: '$ exposure', type: 'money', w: 130 },
+    { key: 'status', label: 'Status', type: 'select', options: STATUS, w: 120 },
+    { key: 'notes', label: 'Notes', type: 'text', w: 220 },
+  ],
+  adjustments: [
+    { key: 'date', label: 'Date', type: 'text', w: 110 },
+    { key: 'description', label: 'Description', type: 'text', w: 260 },
+    { key: 'debit_account', label: 'Debit account', type: 'text', w: 190 },
+    { key: 'credit_account', label: 'Credit account', type: 'text', w: 190 },
+    { key: 'amount', label: 'Amount', type: 'money', w: 120 },
+    { key: 'status', label: 'Status', type: 'select', options: ['Draft', 'Ready for CPA', 'Approved', 'Posted to QB'], w: 140 },
+    { key: 'memo', label: 'Memo / support', type: 'text', w: 200 },
+  ],
+}
+
+const TABS = [
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'coa', label: 'Chart of Accounts' },
+  { id: 'banks', label: 'Bank Reconciliation' },
+  { id: 'loans', label: 'Inter-company Loans' },
+  { id: 'arap', label: 'A/R & A/P' },
+  { id: 'findings', label: 'Findings' },
+  { id: 'adjustments', label: 'Adjusting Entries (CPA)' },
+]
+
+function statusClass(v) {
+  const s = String(v || '').toLowerCase()
+  if (s === 'done' || s === 'ok') return 'pill pill-green'
+  if (s === 'in progress') return 'pill pill-amber'
+  if (s === 'retire' || s === 'n/a') return 'pill pill-gray'
+  return 'pill pill-red'
+}
+function sevClass(v) {
+  const s = String(v || '').toLowerCase()
+  if (s === 'critical') return 'pill pill-red'
+  if (s === 'high') return 'pill pill-orange'
+  if (s === 'medium') return 'pill pill-amber'
+  return 'pill pill-green'
+}
+
+function Cell({ row, col, onEdit }) {
+  if (col.type === 'derived') {
+    const gap = (Number(row.qb_balance) || 0) - (row.bank_balance == null ? Number(row.qb_balance) || 0 : Number(row.bank_balance) || 0)
+    const off = row.bank_balance == null ? '—' : money(gap)
+    return <span className={Math.abs(gap) > 0.005 && row.bank_balance != null ? 'gap-bad' : ''}>{off}</span>
+  }
+  const val = row[col.key]
+  if (col.type === 'select') {
+    const cls = col.key === 'status' ? statusClass(val) : col.key === 'severity' ? sevClass(val) : ''
+    return (
+      <select className={'cell-select ' + cls} value={val ?? ''} onChange={(e) => onEdit(col.key, e.target.value)}>
+        <option value=""></option>
+        {col.options.map((o) => (
+          <option key={o} value={o}>{o}</option>
+        ))}
+      </select>
+    )
+  }
+  if (col.type === 'money' || col.type === 'number') {
+    return (
+      <input
+        className="cell-input num"
+        type="number"
+        step="0.01"
+        value={val ?? ''}
+        onChange={(e) => onEdit(col.key, e.target.value === '' ? null : Number(e.target.value))}
+      />
+    )
+  }
+  return (
+    <input
+      className="cell-input"
+      type="text"
+      value={val ?? ''}
+      onChange={(e) => onEdit(col.key, e.target.value)}
+    />
+  )
+}
+
+function EditableTable({ table, rows, onEdit, onDelete, onAdd }) {
+  const cols = COLS[table]
+  return (
+    <div className="table-wrap">
+      <table className="grid">
+        <thead>
+          <tr>
+            {cols.map((c) => (
+              <th key={c.key} style={{ minWidth: c.w }}>{c.label}</th>
+            ))}
+            <th style={{ width: 34 }}></th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.id}>
+              {cols.map((c) => (
+                <td key={c.key}>
+                  <Cell row={r} col={c} onEdit={(k, v) => onEdit(r.id, k, v)} />
+                </td>
+              ))}
+              <td>
+                <button className="row-del" title="Delete row" onClick={() => onDelete(r.id)}>×</button>
+              </td>
+            </tr>
+          ))}
+          {rows.length === 0 && (
+            <tr><td colSpan={cols.length + 1} className="empty">No rows yet.</td></tr>
+          )}
+        </tbody>
+      </table>
+      <button className="btn ghost add" onClick={onAdd}>+ Add row</button>
+    </div>
+  )
+}
+
+function exportCSV(table, rows) {
+  const cols = COLS[table].filter((c) => c.type !== 'derived')
+  download(`stevenson_${table}.csv`, toCSV(rows, cols))
+}
+
+function Dashboard({ data }) {
+  const findings = data.findings || []
+  const bySev = SEV.map((s) => ({ s, n: findings.filter((f) => f.severity === s).length }))
+  const done = findings.filter((f) => ['Done', 'OK'].includes(f.status)).length
+  const bankGap = (data.banks || []).reduce((a, b) => {
+    if (b.bank_balance == null) return a
+    return a + Math.abs((Number(b.qb_balance) || 0) - (Number(b.bank_balance) || 0))
+  }, 0)
+  const phantomAP = (data.arap || []).filter((r) => r.kind === 'AP').reduce((a, r) => a + (Number(r.amount) || 0), 0)
+  const loanTotal = (data.loanaccts || []).reduce((a, r) => a + Math.abs(Number(r.qb_balance) || 0), 0)
+  const openItems = TABLES.reduce((a, t) => a + (data[t] || []).filter((r) => r.status === 'To do').length, 0)
+
+  const pct = findings.length ? Math.round((done / findings.length) * 100) : 0
+
+  return (
+    <div className="dash">
+      <div className="cards">
+        <div className="card">
+          <div className="card-k">Cleanup progress</div>
+          <div className="card-v">{pct}%</div>
+          <div className="bar"><div className="bar-fill" style={{ width: pct + '%' }} /></div>
+          <div className="card-sub">{done} of {findings.length} top findings cleared</div>
+        </div>
+        <div className="card">
+          <div className="card-k">Open "to-do" items</div>
+          <div className="card-v">{openItems}</div>
+          <div className="card-sub">across every module</div>
+        </div>
+        <div className="card">
+          <div className="card-k">Bank vs QB gap</div>
+          <div className="card-v">{money(bankGap)}</div>
+          <div className="card-sub">cash to reconcile</div>
+        </div>
+        <div className="card">
+          <div className="card-k">Phantom A/P</div>
+          <div className="card-v">{money(phantomAP)}</div>
+          <div className="card-sub">to verify / write off</div>
+        </div>
+        <div className="card">
+          <div className="card-k">Loan accounts</div>
+          <div className="card-v">{money(loanTotal)}</div>
+          <div className="card-sub">{(data.loanaccts || []).length} to reconcile across entities</div>
+        </div>
+      </div>
+
+      <div className="sev-row">
+        {bySev.map(({ s, n }) => (
+          <div key={s} className="sev-box">
+            <span className={sevClass(s)}>{s}</span>
+            <b>{n}</b>
+          </div>
+        ))}
+      </div>
+
+      <div className="note">
+        <b>How to use this:</b> QuickBooks stays frozen. Work each module, set the corrected balance, and move
+        items from <span className="pill pill-red">To do</span> to <span className="pill pill-green">Done</span>.
+        When an item produces a journal entry, add it on the <b>Adjusting Entries</b> tab and export the CSV for your CPA.
+        Nothing here changes QuickBooks.
+      </div>
+    </div>
+  )
+}
+
+function LoansTab({ data, edit, del, add }) {
+  const ledger = data.loanledger || []
+  const summary = useMemo(() => {
+    const m = {}
+    for (const e of ledger) {
+      const cp = e.counterparty || '(unspecified)'
+      if (!m[cp]) m[cp] = 0
+      const amt = Number(e.amount) || 0
+      m[cp] += String(e.direction || '').startsWith('In') ? amt : -amt
+    }
+    return Object.entries(m).map(([cp, net]) => ({ cp, net }))
+  }, [ledger])
+
+  return (
+    <div>
+      <h3 className="sub">Loan / related-party accounts (QuickBooks balances)</h3>
+      <p className="muted">Each balance must mirror the counterparty entity's books. Rule: any money received from PalPakUSA,
+        Christiansen Trust, Christiansen Enterprises, American Luxury Services, USAA, or other VCCU accounts is a <b>loan</b>, not revenue.</p>
+      <div className="tbar">
+        <button className="btn" onClick={() => exportCSV('loanaccts', data.loanaccts || [])}>Export CSV</button>
+      </div>
+      <EditableTable table="loanaccts" rows={data.loanaccts || []} onEdit={(id, k, v) => edit('loanaccts', id, k, v)} onDelete={(id) => del('loanaccts', id)} onAdd={() => add('loanaccts')} />
+
+      <h3 className="sub" style={{ marginTop: 26 }}>Inter-company loan ledger</h3>
+      <p className="muted">Log every transfer between entities. "In" = money came into Stevenson (a loan to Stevenson); "Out" = Stevenson repaid or lent out.</p>
+      <div className="tbar">
+        <button className="btn" onClick={() => exportCSV('loanledger', ledger)}>Export CSV</button>
+      </div>
+      <EditableTable table="loanledger" rows={ledger} onEdit={(id, k, v) => edit('loanledger', id, k, v)} onDelete={(id) => del('loanledger', id)} onAdd={() => add('loanledger')} />
+
+      {summary.length > 0 && (
+        <div className="summary">
+          <h3 className="sub">Computed net per counterparty (from the ledger)</h3>
+          <table className="grid mini">
+            <thead><tr><th>Counterparty</th><th>Net (owed by Stevenson +)</th></tr></thead>
+            <tbody>
+              {summary.map((s) => (
+                <tr key={s.cp}><td>{s.cp}</td><td className="num">{money(s.net)}</td></tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="muted">Compare each net to the QB balance above and to the counterparty's own books — they should agree.</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function App() {
+  const [tab, setTab] = useState('dashboard')
+  const [data, setData] = useState(null)
+  const [busy, setBusy] = useState(false)
+
+  async function loadAll() {
+    const out = {}
+    for (const t of TABLES) out[t] = await list(t)
+    setData(out)
+  }
+  useEffect(() => { loadAll() }, [])
+
+  async function edit(table, id, key, value) {
+    const row = { ...(data[table].find((r) => r.id === id)), [key]: value }
+    setData((d) => ({ ...d, [table]: d[table].map((r) => (r.id === id ? row : r)) }))
+    await upsert(table, row)
+  }
+  async function add(table) {
+    const blank = { id: uid() }
+    COLS[table].forEach((c) => { if (c.type !== 'derived') blank[c.key] = c.type === 'money' || c.type === 'number' ? null : '' })
+    if (COLS[table].some((c) => c.key === 'status')) blank.status = 'To do'
+    setData((d) => ({ ...d, [table]: [...d[table], blank] }))
+    await upsert(table, blank)
+  }
+  async function del(table, id) {
+    setData((d) => ({ ...d, [table]: d[table].filter((r) => r.id !== id) }))
+    await remove(table, id)
+  }
+
+  async function doBackup() {
+    const all = await exportAll()
+    download('stevenson-workbench-backup.json', JSON.stringify(all, null, 2), 'application/json')
+  }
+  function doRestore(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = async () => {
+      try {
+        setBusy(true)
+        await importAll(JSON.parse(reader.result))
+        await loadAll()
+        alert('Backup restored.')
+      } catch (err) { alert('Could not read that file: ' + err.message) } finally { setBusy(false) }
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
+  async function doReset() {
+    if (!confirm('Reset all data back to the original seed? This discards your changes (Local mode only).')) return
+    resetLocal()
+    await loadAll()
+  }
+  async function cpaPacket() {
+    const rows = data.adjustments || []
+    if (rows.length === 0) { alert('No adjusting entries yet. Add them on the Adjusting Entries tab.'); return }
+    exportCSV('adjustments', rows)
+  }
+
+  if (!data) return <div className="loading">Loading workbench…</div>
+
+  return (
+    <div className="app">
+      <header className="topbar">
+        <div className="brand">
+          <div className="logo">SB</div>
+          <div>
+            <div className="title">Stevenson Books — Cleanup Workbench</div>
+            <div className="subtitle">Your corrected books, tracked outside QuickBooks. QuickBooks is never changed by this app.</div>
+          </div>
+        </div>
+        <div className="top-actions">
+          <span className={'mode ' + (MODE === 'supabase' ? 'mode-cloud' : 'mode-local')}>
+            {MODE === 'supabase' ? '☁ Cloud sync' : '💾 Local (this browser)'}
+          </span>
+          <button className="btn ghost" onClick={() => sb.auth.signOut()}>Sign out</button>
+          <button className="btn" onClick={cpaPacket}>Export CPA packet</button>
+          <button className="btn ghost" onClick={doBackup}>Backup</button>
+          <label className="btn ghost file">Restore<input type="file" accept="application/json" onChange={doRestore} hidden /></label>
+          {MODE === 'local' && <button className="btn ghost" onClick={doReset}>Reset</button>}
+        </div>
+      </header>
+
+      <nav className="tabs">
+        {TABS.map((t) => (
+          <button key={t.id} className={'tab' + (tab === t.id ? ' active' : '')} onClick={() => setTab(t.id)}>{t.label}</button>
+        ))}
+      </nav>
+
+      <main className="content">
+        {busy && <div className="loading">Working…</div>}
+        {tab === 'dashboard' && <Dashboard data={data} />}
+
+        {tab === 'loans' && <LoansTab data={data} edit={edit} del={del} add={add} />}
+
+        {['coa', 'banks', 'arap', 'findings', 'adjustments'].includes(tab) && (
+          <div>
+            <div className="tbar">
+              <h3 className="sub">{TABS.find((t) => t.id === tab).label}</h3>
+              <button className="btn" onClick={() => exportCSV(tab, data[tab])}>Export CSV</button>
+            </div>
+            <EditableTable
+              table={tab}
+              rows={data[tab]}
+              onEdit={edit.bind(null, tab) /* eslint-disable-line */}
+              onDelete={(id) => del(tab, id)}
+              onAdd={() => add(tab)}
+            />
+          </div>
+        )}
+      </main>
+
+      <footer className="foot">
+        Read-only review captured June 19, 2026 • Figures are "as recorded in QuickBooks" except the live bank-feed column •
+        Coordinate any change to a filed year with your CPA.
+      </footer>
+    </div>
+  )
+}
+
+
+
+function Login() {
+  const [email, setEmail] = useState('john@jvsindustries.com');
+  const [code, setCode] = useState('');
+  const [sent, setSent] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  async function send() {
+    setBusy(true); setMsg('');
+    const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+    setBusy(false);
+    if (error) setMsg(error.message); else { setSent(true); setMsg('Check your email for a 6-digit code.'); }
+  }
+  async function verify() {
+    setBusy(true); setMsg('');
+    const { error } = await sb.auth.verifyOtp({ email, token: code.trim(), type: 'email' });
+    setBusy(false);
+    if (error) setMsg(error.message);
+  }
+  return (
+    <div className="login">
+      <div className="login-card">
+        <div className="logo">SB</div>
+        <h1>Stevenson Books</h1>
+        <p className="muted">Cleanup Workbench · sign in to continue</p>
+        <label>Email</label>
+        <input className="login-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={sent} />
+        {sent && (<><label>6-digit code</label><input className="login-input" type="text" inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} placeholder="——————" autoFocus /></>)}
+        {!sent
+          ? <button className="btn login-btn" onClick={send} disabled={busy}>{busy ? 'Sending…' : 'Email me a code'}</button>
+          : <button className="btn login-btn" onClick={verify} disabled={busy}>{busy ? 'Verifying…' : 'Sign in'}</button>}
+        {sent && <button className="linkbtn" onClick={() => { setSent(false); setCode(''); setMsg(''); }}>use a different email</button>}
+        {msg && <div className="login-msg">{msg}</div>}
+        <div className="login-foot">Locked to your IVAI account · your books stay private</div>
+      </div>
+    </div>
+  );
+}
+function Root() {
+  const [session, setSession] = useState(undefined);
+  useEffect(() => {
+    sb.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: sub } = sb.auth.onAuthStateChange((_e, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+  if (session === undefined) return <div className="loading">Loading…</div>;
+  if (!session) return <Login />;
+  return <App />;
+}
+
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(Root));
+</script>
+</body>
+</html>
